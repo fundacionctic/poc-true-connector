@@ -2,6 +2,9 @@
 
 FROM eclipse-temurin:11-jre-alpine
 
+# cURL was missing in the original repository and is required for the healthchecks to work
+RUN apk add curl
+
 # Add Maintainer Info
 LABEL maintainer="gabriele.deluca@eng.it"
 
