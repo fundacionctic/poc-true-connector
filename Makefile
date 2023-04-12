@@ -6,16 +6,49 @@ ifneq (,$(wildcard ./.env.local))
 	export $(shell sed 's/=.*//' .env.local)
 endif
 
+data_app_image = poc-true-data-app
+connector_dir = true-connector
+mml_dir = multipart-message-library
+wms_dir = websocket-message-streamer
+
+check:
+	mvn --version
+	python3 --version
+	docker compose version
+
 clean:
-	(cd true-connector && docker compose down -v) || true
-	rm -fr true-connector
+	(cd ${connector_dir} && docker compose down -v) || true
+	(cd be-dataapp-provider && mvn clean) || true
+	rm -fr ${connector_dir} ${mml_dir} ${wms_dir}
 
-clone: clean
-	git clone git@github.com:International-Data-Spaces-Association/true-connector.git
-	cd true-connector && git reset --hard ${TRUE_CONNECTOR_COMMIT_SHA}
+data-app-deps:
+	rm -fr ${mml_dir} ${wms_dir}
+	
+	git clone --depth 1 --branch ${MML_TAG} \
+		git@github.com:Engineering-Research-and-Development/true-connector-multipart_message_library.git \
+		${mml_dir}
 
-up: clone
-	cd true-connector && docker compose up -d --build --wait
+	cd ${mml_dir} && mvn clean install
+
+	git clone --depth 1 --branch ${WMS_TAG} \
+		git@github.com:Engineering-Research-and-Development/true-connector-websocket_message_streamer.git \
+		${wms_dir}
+
+	cd ${wms_dir} && mvn clean install
+
+data-app: data-app-deps
+	cd be-dataapp-provider && \
+		mvn clean package && \
+		docker build -t ${data_app_image} .
+
+clone:
+	rm -fr ${connector_dir}
+	git clone git@github.com:International-Data-Spaces-Association/true-connector.git ${connector_dir}
+	cd ${connector_dir} && git reset --hard ${TRUE_CONNECTOR_COMMIT_SHA}
+
+up: data-app clone
+	sed -i -E -r "s|image: rdlabengpa/ids_be_data_app:.*|image: ${data_app_image}:latest|g" ${connector_dir}/docker-compose.yml
+	cd ${connector_dir} && docker compose up -d --build --wait
 	./check-connector-health.sh
 
-.PHONY: clean clone up
+.PHONY: check clean clone up data-app-deps data-app
