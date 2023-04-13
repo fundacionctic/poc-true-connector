@@ -195,5 +195,5 @@ replay_pid*
 
 .vscode
 true-connector
-multipart_message_library
-websocket_message_streamer
+multipart-message-library
+websocket-message-streamer
