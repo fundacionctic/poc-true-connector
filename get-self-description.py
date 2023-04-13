@@ -9,6 +9,7 @@ from base64 import b64encode
 
 _USER = "admin"
 _PASS = "password"
+# ecc-consumer
 _HOST = "localhost:8090"
 
 _logger = logging.getLogger()
