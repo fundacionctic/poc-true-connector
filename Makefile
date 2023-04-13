@@ -12,10 +12,15 @@ mml_dir = multipart-message-library
 wms_dir = websocket-message-streamer
 post_up_sleep = 10
 
+.DEFAULT_GOAL := up
+
 check:
+	@echo Checking availability of tools and dependencies
 	mvn --version
 	python3 --version
 	docker compose version
+	git --version
+	curl --version
 
 clean:
 	(cd ${connector_dir} && docker compose down -v) || true
@@ -49,7 +54,7 @@ clone:
 	git clone git@github.com:International-Data-Spaces-Association/true-connector.git ${connector_dir}
 	cd ${connector_dir} && git reset --hard ${TRUE_CONNECTOR_COMMIT_SHA}
 
-up: data-app clone
+up: check data-app clone
 	sed -i -E -r "s|image: rdlabengpa/ids_be_data_app:.*|image: ${data_app_image}:latest|g" ${connector_dir}/docker-compose.yml
 	cd ${connector_dir} && docker compose up -d --build --wait && sleep ${post_up_sleep}
 	./check-connector-health.sh
