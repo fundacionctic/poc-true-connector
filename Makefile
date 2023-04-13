@@ -10,6 +10,7 @@ data_app_image = poc-true-data-app
 connector_dir = true-connector
 mml_dir = multipart-message-library
 wms_dir = websocket-message-streamer
+post_up_sleep = 10
 
 check:
 	mvn --version
@@ -22,13 +23,15 @@ clean:
 	rm -fr ${connector_dir} ${mml_dir} ${wms_dir}
 
 data-app-deps:
-	rm -fr ${mml_dir} ${wms_dir}
+	rm -fr ${mml_dir}
 	
 	git clone --depth 1 --branch ${MML_TAG} \
 		git@github.com:Engineering-Research-and-Development/true-connector-multipart_message_library.git \
 		${mml_dir}
 
 	cd ${mml_dir} && mvn clean install
+
+	rm -fr ${wms_dir}
 
 	git clone --depth 1 --branch ${WMS_TAG} \
 		git@github.com:Engineering-Research-and-Development/true-connector-websocket_message_streamer.git \
@@ -48,7 +51,7 @@ clone:
 
 up: data-app clone
 	sed -i -E -r "s|image: rdlabengpa/ids_be_data_app:.*|image: ${data_app_image}:latest|g" ${connector_dir}/docker-compose.yml
-	cd ${connector_dir} && docker compose up -d --build --wait
+	cd ${connector_dir} && docker compose up -d --build --wait && sleep ${post_up_sleep}
 	./check-connector-health.sh
 
-.PHONY: check clean clone up data-app-deps data-app
+.PHONY: check clean data-app-deps data-app clone up
