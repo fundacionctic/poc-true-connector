@@ -5,10 +5,10 @@ import static de.fraunhofer.iais.eis.util.Util.asList;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.text.DateFormat;
-import java.text.SimpleDateFormat;
+import java.time.ZoneOffset;
+import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.Base64;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -156,17 +156,11 @@ public class ArtifactMessageHandler extends DataAppMessageHandler {
 	}
 
 	private String createResponsePayload() {
-		// Put check sum in the payload
-		DateFormat dateFormat = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss");
-		Date date = new Date();
-		String formattedDate = dateFormat.format(date);
+		String isoDate = ZonedDateTime.now(ZoneOffset.UTC).format(DateTimeFormatter.ISO_INSTANT);
 
 		Map<String, String> jsonObject = new HashMap<>();
-		jsonObject.put("firstName", "John");
-		jsonObject.put("lastName", "Doe");
-		jsonObject.put("dateOfBirth", formattedDate);
-		jsonObject.put("address", "591  Franklin Street, Pennsylvania");
-		jsonObject.put("checksum", "ABC123 " + formattedDate);
+		jsonObject.put("description", "Minimal proof-of-concept of the IDS TRUE Connector");
+		jsonObject.put("date", isoDate);
 		Gson gson = new GsonBuilder().create();
 
 		return gson.toJson(jsonObject);
@@ -175,7 +169,8 @@ public class ArtifactMessageHandler extends DataAppMessageHandler {
 	private Message createArtifactResponseMessage(ArtifactRequestMessage header) {
 		// Need to set transferCotract from original message, it will be used in policy
 		// enforcement
-		return new ArtifactResponseMessageBuilder()._issuerConnector_(whoIAmEngRDProvider())._issued_(DateUtil.normalizedDateTime())
+		return new ArtifactResponseMessageBuilder()._issuerConnector_(whoIAmEngRDProvider())
+				._issued_(DateUtil.normalizedDateTime())
 				._modelVersion_(UtilMessageService.MODEL_VERSION)._transferContract_(header.getTransferContract())
 				._senderAgent_(whoIAmEngRDProvider())
 				._recipientConnector_(header != null ? asList(header.getIssuerConnector()) : asList(whoIAm()))
